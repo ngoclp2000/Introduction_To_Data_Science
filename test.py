@@ -9,7 +9,7 @@ import re
 import numpy as np
 import string
 import unidecode
-PATH = "E:\Selenium\Introduction_To_Data_Science\chromedriver.exe"
+PATH = "E:\Selenium\Introduction_To_Data_Science\chromedriver1.exe"
 
 driver = webdriver.Chrome(PATH)
 urls = [
@@ -17,9 +17,7 @@ urls = [
 ]
 def clean_string(string): 
     string = string.replace('\n',' ')
-    string = string.replace(',',';')
-    string = string.replace(':','')
-    string = string.replace('-','')
+    string = string.replace(',',' ')
     string = string.rstrip()
     string_without_newline = ""
     for c in string:
@@ -94,7 +92,8 @@ def get_info(cate_name,count):
                             '//div[@class="name"]/span')[count].text
     price = driver.find_elements_by_xpath(
                             '//div[@class="price-discount__price"]')[count].text
-    
+    price = price.replace('.','')
+    price = price.replace('₫','')
     driver.get(products[count].get_attribute("href"))
     time.sleep(1)
     driver.execute_script(
@@ -177,7 +176,7 @@ def get_info(cate_name,count):
                 }
             }
             if(check == 0){
-                rs.push("Node");
+                rs.push("None");
             }else{
                 check = 0;
             }
@@ -188,7 +187,7 @@ def get_info(cate_name,count):
                 }
             }
             if(check == 0){
-                rs.push("Node");
+                rs.push("None");
             }else{
                 check = 0;
             }
@@ -199,7 +198,7 @@ def get_info(cate_name,count):
                 }
             }
             if(check == 0){
-                rs.push("Node");
+                rs.push("None");
             }else{
                 check = 0;
             }
@@ -210,7 +209,7 @@ def get_info(cate_name,count):
                 }
             }
             if(check == 0){
-                rs.push("Node");
+                rs.push("None");
             }else{
                 check = 0;
             }
@@ -227,8 +226,17 @@ def get_info(cate_name,count):
             }
             return rs;
         ''')
+        c = 0
         for word in description:
-            data.append(clean_string(word))
+            if c == 1 or c == 4:
+                word = clean_string(word)
+                if word != 'None':
+                    data.append(re.findall("[0-9]+", word)[0])
+                else:
+                    data.append(word)
+            else:
+                data.append(clean_string(word))
+            c+=1
     time.sleep(1)
     return data
 for url in urls:
@@ -240,7 +248,7 @@ for url in urls:
     while count_cate < len(categories) and categories[count_cate] is not None:
         count_sub_cate = 0
         cat_text = categories[count_cate].text
-        if "Tivi" != cat_text  and "Máy giặt" != cat_text:
+        if "Tivi" != cat_text:
             count_cate += 1
             continue
         cat_href = categories[count_cate].get_attribute("href")
@@ -261,7 +269,7 @@ for url in urls:
                 filename_normal_form = ""
                 for word in arr_words:
                     filename_normal_form += word
-                filename_normal_form = ".\data\electric_device\\" + filename_normal_form + ".csv"
+                filename_normal_form = ".\data_without_comments\electric_device\\" + filename_normal_form + ".csv"
                 file = open(filename_normal_form,"a",encoding='utf-8')
                 driver.get(sub_category.get_attribute("href"))
                 driver.execute_script('''
@@ -274,56 +282,17 @@ for url in urls:
                         products = driver.find_elements_by_xpath('//a[@class="product-item"]')
                         print(len(products))
                         while count < len(products) and products[count] is not None:
-                            number_of_comment_count = 0
                             infos = get_info(cat_text,count)
-                            #time.sleep(1)
-                            check = check_next_button_comments()
-                            element_product = []
-                            if(check == 1):
-                                while check == 1 and number_of_comment_count <= 500:
-                                    results = get_comments()
-                                    number_of_comment_count += len(results)
-                                    time.sleep(0.5)
-                                    check = check_next_button_comments()
-                                    if check == 1:
-                                        driver.execute_script(''' 
-                                            document.querySelector('a[class="btn next"]').click();
-                                        ''')
-                                    for result in results:
-                                        string_without_newline = clean_string(result)
-                                        string_push = ""
-                                        string_push += str(index) + ','
-                                        for info in infos:
-                                            print(info)
-                                            string_push += str(info) + ','
-                                        string_push += string_without_newline + '\n'
-                                        file.write(string_push)
-                                    if number_of_comment_count == 0:
-                                        string_push = ""
-                                        string_push += str(index) + ','
-                                        for info in infos:
-                                            string_push += str(info) + ','
-                                        string_push += "None" + '\n'
-                                        file.write(string_push)
-                            else:
-                                results = get_comments()
-                                number_of_comment_count += len(results)
-                                #time.sleep(1)
-                                for result in results:
-                                    string_without_newline = clean_string(result)
-                                    string_push = ""
-                                    string_push += str(index) + ','
-                                    for info in infos:
-                                        string_push += str(info) + ','
-                                    string_push += string_without_newline + '\n'
-                                    file.write(string_push)
-                                if number_of_comment_count == 0:
-                                    string_push = ""
-                                    string_push += str(index) + ','
-                                    for info in infos:
-                                        string_push += str(info) + ','
-                                    string_push += "None" + '\n'
-                                    file.write(string_push)
+                            string_push = ""
+                            string_push += str(index) + ','
+                            times = 0
+                            for info in infos:
+                                string_push += str(info)
+                                if times != len(infos):
+                                    string_push += ','
+                                times +=1
+                            string_push += '\n'
+                            file.write(string_push)
                             count += 1
                             index += 1
                             driver.back()
@@ -336,56 +305,17 @@ for url in urls:
                     products = driver.find_elements_by_xpath('//a[@class="product-item"]')
                     print(len(products))
                     while count < len(products) and products[count] is not None:
-                        number_of_comment_count = 0
                         infos = get_info(cat_text,count)
-                        #time.sleep(1)
-                        check = check_next_button_comments()
-                        element_product = []
-                        if(check == 1):
-                            while check == 1 and number_of_comment_count <= 500:
-                                results = get_comments()
-                                number_of_comment_count += len(results)
-                                time.sleep(0.5)
-                                check = check_next_button_comments()
-                                if check == 1:
-                                    driver.execute_script(''' 
-                                            document.querySelector('a[class="btn next"]').click();
-                                    ''')
-                                for result in results:
-                                    string_without_newline = clean_string(result)
-                                    string_push = ""
-                                    string_push += str(index) + ','
-                                    for info in infos:
-                                        print(info)
-                                        string_push += str(info) + ','
-                                    string_push += string_without_newline + '\n'
-                                    file.write(string_push)
-                                if number_of_comment_count == 0:
-                                    string_push = ""
-                                    string_push += str(index) + ','
-                                    for info in infos:
-                                        string_push += str(info) + ','
-                                    string_push += "None" + '\n'
-                                    file.write(string_push)
-                        else:
-                            results = get_comments()
-                            number_of_comment_count += len(results)
-                                #time.sleep(1)
-                            for result in results:
-                                string_without_newline = clean_string(result)
-                                string_push = ""
-                                string_push += str(index) + ','
-                                for info in infos:
-                                    string_push += str(info) + ','
-                                string_push += string_without_newline + '\n'
-                                file.write(string_push)
-                            if number_of_comment_count == 0:
-                                string_push = ""
-                                string_push += str(index) + ','
-                                for info in infos:
-                                    string_push += str(info) + ','
-                                string_push += "None" + '\n'
-                                file.write(string_push)
+                        string_push = ""
+                        string_push += str(index) + ','
+                        times = 0
+                        for info in infos:
+                            string_push += str(info)
+                            if times != len(infos):
+                                string_push += ','
+                            times +=1
+                        string_push += '\n'
+                        file.write(string_push)
                         count += 1
                         index += 1
                         driver.back()
@@ -405,7 +335,7 @@ for url in urls:
             filename_normal_form = ""
             for word in arr_words:
                 filename_normal_form += word
-            filename_normal_form = ".\data\electric_device\\" + filename_normal_form + ".csv"
+            filename_normal_form = ".\data_without_comments\electric_device\\" + filename_normal_form + ".csv"
             file = open(filename_normal_form,"a",encoding='utf-8')
             check_button_next = _check_button_next()
             if check_button_next == 1:
@@ -414,55 +344,17 @@ for url in urls:
                     products = driver.find_elements_by_xpath('//a[@class="product-item"]')
                     print(len(products))
                     while count < len(products) and products[count] is not None:
-                        number_of_comment_count = 0
                         infos = get_info(cat_text,count)
-                        #time.sleep(1)
-                        check = check_next_button_comments()
-                        element_product = []
-                        if(check == 1):
-                            while check == 1 and number_of_comment_count <= 500:
-                                results = get_comments()
-                                number_of_comment_count += len(results)
-                                time.sleep(0.5)
-                                check = check_next_button_comments()
-                                for result in results:
-                                    string_without_newline = clean_string(result)
-                                    string_push = ""
-                                    string_push += str(index) + ','
-                                    for info in infos:
-                                        string_push += str(info) + ','
-                                    string_push += string_without_newline + '\n'
-                                    file.write(string_push)
-                                if number_of_comment_count == 0:
-                                    string_push = ""
-                                    string_push += str(index) + ','
-                                    for info in infos:
-                                        string_push += str(info) + ','
-                                    string_push += "None" + '\n'
-                                    file.write(string_push)
-                                if check == 1:
-                                    driver.execute_script(''' 
-                                            document.querySelector('a[class="btn next"]').click();
-                                    ''')
-                        else:
-                            results = get_comments()
-                            number_of_comment_count += len(results)
-                                #time.sleep(1)
-                            for result in results:
-                                string_without_newline = clean_string(result)
-                                string_push = ""
-                                string_push += str(index) + ','
-                                for info in infos:
-                                    string_push += str(info) + ','
-                                string_push += string_without_newline + '\n'
-                                file.write(string_push)
-                            if number_of_comment_count == 0:
-                                    string_push = ""
-                                    string_push += str(index) + ','
-                                    for info in infos:
-                                        string_push += str(info) + ','
-                                    string_push += "None" + '\n'
-                                    file.write(string_push)
+                        string_push = ""
+                        string_push += str(index) + ','
+                        times = 0
+                        for info in infos:
+                            string_push += str(info)
+                            if times != len(infos):
+                                string_push += ','
+                            times +=1
+                        string_push += '\n'
+                        file.write(string_push)
                         count += 1
                         index += 1
                         driver.back()
@@ -475,54 +367,17 @@ for url in urls:
                 products = driver.find_elements_by_xpath('//a[@class="product-item"]')
                 print(len(products))
                 while count < len(products) and products[count] is not None:
-                    number_of_comment_count = 0
                     infos = get_info(cat_text,count)
-                    #time.sleep(1)
-                    check = check_next_button_comments()
-                    element_product = []
-                    if(check == 1):
-                        while check == 1 and number_of_comment_count <= 500:
-                            results = get_comments()
-                            number_of_comment_count += len(results)
-                            time.sleep(0.5)
-                            check = check_next_button_comments()
-                            for result in results:
-                                string_without_newline = clean_string(result)
-                                string_push = ""
-                                string_push += str(index) + ','
-                                for info in infos:
-                                    string_push += str(info) + ','
-                                string_push += string_without_newline + '\n'
-                                file.write(string_push)
-                            if number_of_comment_count == 0:
-                                string_push = ""
-                                string_push += str(index) + ','
-                                for info in infos:
-                                    string_push += str(info) + ','
-                                string_push += "None" + '\n'
-                                file.write(string_push)
-                            if check == 1:
-                                driver.execute_script(''' 
-                                            document.querySelector('a[class="btn next"]').click();
-                                    ''')
-                    else:
-                        results = get_comments()
-                        number_of_comment_count += len(results)
-                        for result in results:
-                            string_without_newline = clean_string(result)
-                            string_push = ""
-                            string_push += str(index) + ','
-                            for info in infos:
-                                string_push += str(info) + ','
-                            string_push += string_without_newline + '\n'
-                            file.write(string_push)
-                        if number_of_comment_count == 0:
-                                string_push = ""
-                                string_push += str(index) + ','
-                                for info in infos:
-                                    string_push += str(info) + ','
-                                string_push += "None" + '\n'
-                                file.write(string_push)
+                    string_push = ""
+                    string_push += str(index) + ','
+                    times = 0
+                    for info in infos:
+                        string_push += str(info)
+                        if times != len(infos):
+                            string_push += ','
+                        times +=1
+                    string_push += '\n'
+                    file.write(string_push)
                     count += 1
                     index += 1
                     driver.back()
