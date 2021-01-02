@@ -9,7 +9,10 @@ import re
 import numpy as np
 import string
 import unidecode
-PATH = "/Users/nguyentuandung/Desktop/Data Science/ngoc/chromedriver"
+
+
+
+PATH = "E:\Selenium\Introduction_To_Data_Science\chromedriver.exe"
 
 driver = webdriver.Chrome(PATH)
 urls = [
